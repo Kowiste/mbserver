@@ -84,7 +84,7 @@ func WriteHoldingRegister(s *Server, frame Framer) ([]byte, *Exception) {
 
 // WriteMultipleCoils function 15, writes holding registers to internal memory.
 func WriteMultipleCoils(s *Server, frame Framer) ([]byte, *Exception) {
-	register, numRegs, endRegister := RFegisterAddressAndNumber(frame)
+	register, numRegs, endRegister := RegisterAddressAndNumber(frame)
 	valueBytes := frame.GetData()[5:]
 
 	if endRegister > 65536 {
