@@ -86,3 +86,12 @@ func (frame *TCPFrame) SetException(exception *Exception) {
 func (frame *TCPFrame) setLength() {
 	frame.Length = uint16(len(frame.Data) + 2)
 }
+// RegisterAddressAndNumber fix
+func (frame *TCPFrame) RegisterAddressAndNumber(fr Framer) (register int, numRegs int, endRegister int) {
+	return frame.RegisterAddressAndNumber(fr)
+}
+
+//RegisterAddressAndValue fix
+func (frame *TCPFrame) RegisterAddressAndValue(fr Framer) (int, uint16) {
+	return frame.RegisterAddressAndValue(fr)
+}
