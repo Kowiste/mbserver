@@ -84,11 +84,11 @@ func (frame *RTUFrame) SetException(exception *Exception) {
 	frame.Data = []byte{byte(*exception)}
 }
 // RegisterAddressAndNumber fix
-func (frame *TCPFrame) RegisterAddressAndNumber(fr Framer) (register int, numRegs int, endRegister int) {
+func (frame *RTUFrame) RegisterAddressAndNumber(fr Framer) (register int, numRegs int, endRegister int) {
 	return frame.RegisterAddressAndNumber(fr)
 }
 
 //RegisterAddressAndValue fix
-func (frame *TCPFrame) RegisterAddressAndValue(fr Framer) (int, uint16) {
+func (frame *RTUFrame) RegisterAddressAndValue(fr Framer) (int, uint16) {
 	return frame.RegisterAddressAndValue(fr)
 }
