@@ -10,6 +10,8 @@ type Framer interface {
 	GetFunction() uint8
 	SetException(exception *Exception)
 	SetData(data []byte)
+	RegisterAddressAndNumber(frame Framer)(register int, numRegs int, endRegister int)
+	RegisterAddressAndValue(frame Framer) (int, uint16)
 }
 
 // GetException retunrns the Modbus exception or Success (indicating not exception).
