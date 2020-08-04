@@ -16,6 +16,7 @@ type Server struct {
 	ports            []serial.Port
 	requestChan      chan *Request
 	function         [256](func(*Server, Framer) ([]byte, *Exception))
+	onConnection     (func(net.Addr))
 	DiscreteInputs   []byte
 	Coils            []byte
 	HoldingRegisters []uint16
@@ -57,6 +58,11 @@ func NewServer() *Server {
 // RegisterFunctionHandler override the default behavior for a given Modbus function.
 func (s *Server) RegisterFunctionHandler(funcCode uint8, function func(*Server, Framer) ([]byte, *Exception)) {
 	s.function[funcCode] = function
+}
+
+//OnConnectionHandler Function that happend when there is a new conection
+func (s *Server) OnConnectionHandler(function func(net.Addr)) {
+	s.onConnection = function
 }
 
 func (s *Server) handle(request *Request) Framer {

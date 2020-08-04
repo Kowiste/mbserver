@@ -17,7 +17,9 @@ func (s *Server) accept(listen net.Listener) error {
 			log.Printf("Unable to accept connections: %#v\n", err)
 			return err
 		}
-
+		if s.onConnection !=nil{
+			go s.onConnection(conn.LocalAddr())
+		}
 		go func(conn net.Conn) {
 			defer conn.Close()
 

@@ -88,10 +88,10 @@ func (frame *TCPFrame) setLength() {
 }
 // RegisterAddressAndNumber fix
 func (frame *TCPFrame) RegisterAddressAndNumber(fr Framer) (register int, numRegs int, endRegister int) {
-	return frame.RegisterAddressAndNumber(fr)
+	return RegisterAddressAndNumber(fr)
 }
 
 //RegisterAddressAndValue fix
 func (frame *TCPFrame) RegisterAddressAndValue(fr Framer) (int, uint16) {
-	return frame.RegisterAddressAndValue(fr)
+	return RegisterAddressAndValue(fr)
 }
