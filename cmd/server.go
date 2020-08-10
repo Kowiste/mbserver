@@ -20,6 +20,7 @@ func main() {
 	port := flag.String("p", "40502", "Port to deploy Modbus")
 	mem := flag.String("mem", "", "Path to the configuration memory json")
 	mode := flag.Int("m", 3, "Mode of the server:	1 = ReadCoils, 2 = ReadDiscreteInputs, 3 = ReadHoldingRegisters, 4 = ReadInputRegisters, 5 = WriteSingleCoil, 6 = WriteHoldingRegister,	15 = WriteMultipleCoils, 16 = WriteHoldingRegisters ")
+	tick := flag.Int("t", 0, "Millisecond to trigger ontimer")
 
 	flag.Parse()
 	if *mem != "" {
@@ -27,11 +28,13 @@ func main() {
 	}
 	serv := md.NewServer()
 	serv.HoldingRegisters = memory
-	if *mode !=0{
+	if *mode != 0 {
 		serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
 	}
 	serv.OnConnectionHandler(ConnectionHandler)
-	serv.OnTimerHandler(TimerHandler, 1*time.Second)
+	if *tick != 0 {
+		serv.OnTimerHandler(TimerHandler, time.Duration(*tick)*time.Second)
+	}
 
 	err := serv.ListenTCP("0.0.0.0:" + *port)
 	if err != nil {
@@ -73,7 +76,7 @@ func ConnectionHandler(IP net.Addr) {
 
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
-	log.Println("Timer happen")
+	log.Println("Updating values")
 	s.HoldingRegisters[2]++
 }
 
