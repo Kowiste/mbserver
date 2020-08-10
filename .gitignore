@@ -1,3 +1,6 @@
 ttyFOO
 ttyBAR
 __debug*
+.vscode
+
+.vscode/launch.json
