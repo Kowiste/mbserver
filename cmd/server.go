@@ -26,15 +26,19 @@ func main() {
 		memory = loadMemory(*mem)
 	}
 	serv := md.NewServer()
-	serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
+	serv.HoldingRegisters = memory
+	if *mode !=0{
+		serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
+	}
 	serv.OnConnectionHandler(ConnectionHandler)
+	serv.OnTimerHandler(TimerHandler, 1*time.Second)
 
 	err := serv.ListenTCP("0.0.0.0:" + *port)
 	if err != nil {
 		log.Printf("%v\n", err)
 	}
 	defer serv.Close()
-	log.Println("Server Active")
+	log.Println("[Author: kowiste] Modbus Server Active on port", *port)
 
 	// Wait forever
 	for {
@@ -65,6 +69,12 @@ func CustomHandler(s *md.Server, frame md.Framer) ([]byte, *md.Exception) {
 //ConnectionHandler On connection
 func ConnectionHandler(IP net.Addr) {
 	log.Println("Connection Establish from: ", IP.String())
+}
+
+//TimerHandler on timer handler pout the code you want to execute every time given
+func TimerHandler(s *md.Server) {
+	log.Println("Timer happen")
+	s.HoldingRegisters[2]++
 }
 
 func loadMemory(path string) []uint16 {

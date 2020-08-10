@@ -4,6 +4,7 @@ package mbserver
 import (
 	"io"
 	"net"
+	"time"
 
 	"github.com/goburrow/serial"
 )
@@ -17,6 +18,8 @@ type Server struct {
 	requestChan      chan *Request
 	function         [256](func(*Server, Framer) ([]byte, *Exception))
 	onConnection     (func(net.Addr))
+	onTimer          (func(*Server))
+	tick             time.Duration
 	DiscreteInputs   []byte
 	Coils            []byte
 	HoldingRegisters []uint16
@@ -60,6 +63,13 @@ func (s *Server) RegisterFunctionHandler(funcCode uint8, function func(*Server, 
 	s.function[funcCode] = function
 }
 
+//OnTimerHandler Function that happend when there is a new conection
+func (s *Server) OnTimerHandler(function func(*Server), tick time.Duration) {
+	s.onTimer = function
+	s.tick = tick
+	go s.timing(s.tick)
+}
+
 //OnConnectionHandler Function that happend when there is a new conection
 func (s *Server) OnConnectionHandler(function func(net.Addr)) {
 	s.onConnection = function
@@ -73,7 +83,7 @@ func (s *Server) handle(request *Request) Framer {
 
 	function := request.frame.GetFunction()
 	if s.function[function] != nil {
-		data, exception = s.function[function](s, request.frame)
+		data, exception = s.function[function](s, request.frame) //Call the fucntion when there is request
 		response.SetData(data)
 	} else {
 		exception = &IllegalFunction
@@ -92,6 +102,14 @@ func (s *Server) handler() {
 		request := <-s.requestChan
 		response := s.handle(request)
 		request.conn.Write(response.Bytes())
+	}
+}
+
+func (s *Server) timing(tick time.Duration) {
+	t := time.NewTicker(tick)
+	for {
+		<-t.C //Wait for the time
+		s.onTimer(s)
 	}
 }
 

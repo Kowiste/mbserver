@@ -18,7 +18,7 @@ func (s *Server) accept(listen net.Listener) error {
 			return err
 		}
 		if s.onConnection !=nil{
-			go s.onConnection(conn.LocalAddr())
+			go s.onConnection(conn.RemoteAddr())
 		}
 		go func(conn net.Conn) {
 			defer conn.Close()
