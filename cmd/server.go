@@ -75,7 +75,7 @@ func ConnectionHandler(IP net.Addr) {
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
 	//log.Println("Updating values")
-	//GTruck.updateGeo()
+	GTruck.updateGeo()
 }
 
 func loadMemory(path string) []uint16 {
