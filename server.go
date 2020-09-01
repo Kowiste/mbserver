@@ -19,7 +19,6 @@ type Server struct {
 	function         [256](func(*Server, Framer) ([]byte, *Exception))
 	onConnection     (func(net.Addr))
 	onTimer          (func(*Server))
-	tick             time.Duration
 	DiscreteInputs   []byte
 	Coils            []byte
 	HoldingRegisters []uint16
@@ -66,8 +65,7 @@ func (s *Server) RegisterFunctionHandler(funcCode uint8, function func(*Server, 
 //OnTimerHandler Function that happend when there is a new conection
 func (s *Server) OnTimerHandler(function func(*Server), tick time.Duration) {
 	s.onTimer = function
-	s.tick = tick
-	go s.timing(s.tick)
+	go s.timing(tick)
 }
 
 //OnConnectionHandler Function that happend when there is a new conection
