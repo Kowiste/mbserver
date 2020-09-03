@@ -13,7 +13,7 @@ import (
 
 //constant
 const (
-	NTimesActive int = 20
+	NTimesActive int = 200
 )
 
 var rdSource rand.Source
@@ -33,12 +33,11 @@ func main() {
 		//memory =  //loadMemory(*mem)
 		memory = make([]uint16, ^uint16(0))
 		geoMap = loadGeo(*mem)
-		element := "1000"
-		//for element := range geoMap {
+		for element := range geoMap {
 		GTruck.Trucks[element] = &Truck{Max: len(geoMap[element]), GPS: geoMap[element]}
 		GTruck.Trucks[element].pumps = loadPump()
 		GTruck.Trucks[element].TimesAct = NTimesActive
-		//}
+		}
 	}
 	GTruck.updateGeo()
 	serv := md.NewServer()
@@ -108,7 +107,7 @@ func loadGeo(path string) map[string][]float64 {
 func loadPump() map[byte]*Pump {
 	t := make(map[byte]*Pump)
 	for i := 0; i < 2; i++ {
-		t[byte(i)] = NewPump(380, 380, 30, 5, 2.5)
+		t[byte(i)] = NewPump(380, 38, 30, 5, 2.5)
 	}
 	return t
 }

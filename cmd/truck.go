@@ -9,7 +9,7 @@ import (
 
 //Constant values
 const (
-	PercentActive byte = 5
+	PercentActive byte = 3
 )
 
 var geoMap map[string][]float64
@@ -73,6 +73,7 @@ func (t *GroupTrucks) updateGeo() {
 		for element := range retMem {
 			memory[num+element] = retMem[element]
 		}
+		println("")
 	}
 }
 func (t *GroupTrucks) updatePump() {
@@ -81,7 +82,7 @@ func (t *GroupTrucks) updatePump() {
 		num, _ := strconv.Atoi(truck)
 		retMem := t.Pump2uint16()
 		for element := range retMem {
-			memory[num+element+4] = retMem[element] // 4 bc the geolocation
+			memory[num+element+8] = retMem[element] // 8 bc the geolocation
 		}
 	}
 }
