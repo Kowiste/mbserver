@@ -2,6 +2,7 @@
 package mbserver
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -101,6 +102,7 @@ func (s *Server) handler() {
 	for {
 		request := <-s.requestChan
 		response := s.handle(request)
+		fmt.Println("%h", response.Bytes())
 		request.conn.Write(response.Bytes())
 	}
 }

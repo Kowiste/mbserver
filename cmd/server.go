@@ -17,7 +17,7 @@ import (
 var memory []uint16
 
 func main() {
-	port := flag.String("p", "40502", "Port to deploy Modbus")
+	port := flag.String("p", "40102", "Port to deploy Modbus")
 	mem := flag.String("mem", "", "Path to the configuration memory json")
 	mode := flag.Int("m", 3, "Mode of the server:	1 = ReadCoils, 2 = ReadDiscreteInputs, 3 = ReadHoldingRegisters, 4 = ReadInputRegisters, 5 = WriteSingleCoil, 6 = WriteHoldingRegister,	15 = WriteMultipleCoils, 16 = WriteHoldingRegisters ")
 	tick := flag.Int("t", 0, "Millisecond to trigger ontimer")
@@ -29,7 +29,7 @@ func main() {
 	serv := md.NewServer()
 	serv.HoldingRegisters = memory
 	if *mode != 0 {
-		serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
+		//serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
 	}
 	serv.OnConnectionHandler(ConnectionHandler)
 	if *tick != 0 {
