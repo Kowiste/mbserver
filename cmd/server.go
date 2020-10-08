@@ -12,9 +12,14 @@ import (
 	"time"
 
 	md "github.com/Kowiste/modserver"
+	"github.com/kowiste/utils/array"
+	"github.com/kowiste/utils/number"
+	"github.com/kowiste/utils/plc/generate/other"
 )
 
 var memory []uint16
+var sec int
+var msgCount uint16
 
 func main() {
 	port := flag.String("p", "40102", "Port to deploy Modbus")
@@ -33,7 +38,7 @@ func main() {
 	}
 	serv.OnConnectionHandler(ConnectionHandler)
 	if *tick != 0 {
-		serv.OnTimerHandler(TimerHandler, time.Duration(*tick)*time.Second)
+		serv.OnTimerHandler(TimerHandler, time.Duration(*tick)*time.Millisecond)
 	}
 
 	err := serv.ListenTCP("0.0.0.0:" + *port)
@@ -77,7 +82,10 @@ func ConnectionHandler(IP net.Addr) {
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
 	log.Println("Updating values")
-	s.HoldingRegisters[2]++
+	data := array.ByteToUint16Arr(loadStation(), true)
+	for index := range data {
+		s.HoldingRegisters[index] = data[index]
+	}
 }
 
 func loadMemory(path string) []uint16 {
@@ -112,4 +120,52 @@ func int16ToByte(input uint16) []byte {
 	b := make([]byte, 2)
 	binary.BigEndian.PutUint16(b, input)
 	return b
+}
+func loadStation() []byte {
+	index := 0
+	out := make([]byte, 40)
+	///////////////////////
+	// Loading data Station
+	///////////////////////
+	if sec%23 == 0 { //Every 23 second
+		//Connection Status [0]
+		out[index] = 0
+		out[index+1] = 0
+		if other.RandomBool() {
+			out[index+1] = 1
+		}
+
+	}
+	index += 2
+	//message count [1]
+	msgCount += uint16(other.RandomInt(50, 1))
+	numMsg := number.Uint16ToByteArr(msgCount)
+	for element := range numMsg {
+		out[index+element] = numMsg[element]
+	}
+	index += len(numMsg)
+
+	//device connected count [2]
+
+	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(23, 17)))
+	for element := range numMsg {
+		out[index+element] = numMsg[element]
+	}
+	index += len(numMsg)
+
+	//signal strengh [3]
+	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(87, 70)))
+	for element := range numMsg {
+		out[index+element] = numMsg[element]
+	}
+	index += len(numMsg)
+
+	//link quality random over 90 [4]
+	linkQ := number.Float64ToByteArr(other.RandomFloat(-40, -70))
+	for element := range linkQ {
+		out[index+element] = linkQ[element]
+	}
+	index += len(linkQ)
+	sec++
+	return out
 }
