@@ -12,14 +12,18 @@ import (
 	"time"
 
 	md "github.com/Kowiste/modserver"
-	"github.com/kowiste/utils/array"
-	"github.com/kowiste/utils/number"
+	"github.com/kowiste/utils/conversion/array"
+	"github.com/kowiste/utils/conversion/number"
+	"github.com/kowiste/utils/generator/location"
+	plc "github.com/kowiste/utils/plc/generate/location"
 	"github.com/kowiste/utils/plc/generate/other"
+	"github.com/kowiste/utils/read"
 )
 
 var memory []uint16
 var sec int
 var msgCount uint16
+var geo *location.GeoLocationHelper
 
 func main() {
 	port := flag.String("p", "40102", "Port to deploy Modbus")
@@ -28,11 +32,18 @@ func main() {
 	tick := flag.Int("t", 0, "Millisecond to trigger ontimer")
 
 	flag.Parse()
+	geo = location.NewGeoLocnRnd(0.01)
+	b, _ := read.File("device.json")
+	geo.LoadnoZ(b)
+
+	serv := md.NewServer()
 	if *mem != "" {
 		memory = loadMemory(*mem)
+		serv.HoldingRegisters = memory
+	} else {
+		serv.HoldingRegisters = make([]uint16, ^uint16(0))
 	}
-	serv := md.NewServer()
-	serv.HoldingRegisters = memory
+
 	if *mode != 0 {
 		//serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
 	}
@@ -81,8 +92,7 @@ func ConnectionHandler(IP net.Addr) {
 
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
-	log.Println("Updating values")
-	data := array.ByteToUint16Arr(loadStation(), true)
+	data := array.ByteToUint16Arr(loadDevice(), true)
 	for index := range data {
 		s.HoldingRegisters[index] = data[index]
 	}
@@ -127,14 +137,13 @@ func loadStation() []byte {
 	///////////////////////
 	// Loading data Station
 	///////////////////////
+	out[index] = 0
+	out[index+1] = 1
+	status := other.RandomBool()
 	if sec%23 == 0 { //Every 23 second
-		//Connection Status [0]
-		out[index] = 0
-		out[index+1] = 0
-		if other.RandomBool() {
-			out[index+1] = 1
+		if !status { //Connection Status [0]
+			out[index+1] = 0
 		}
-
 	}
 	index += 2
 	//message count [1]
@@ -146,26 +155,70 @@ func loadStation() []byte {
 	index += len(numMsg)
 
 	//device connected count [2]
-
-	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(23, 17)))
-	for element := range numMsg {
-		out[index+element] = numMsg[element]
+	dcnt := other.RandomInt(23, 17)
+	DevCnt := number.Uint16ToByteArr(uint16(dcnt))
+	for element := range DevCnt {
+		out[index+element] = DevCnt[element]
 	}
-	index += len(numMsg)
+	index += len(DevCnt)
 
 	//signal strengh [3]
-	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(87, 70)))
-	for element := range numMsg {
-		out[index+element] = numMsg[element]
+	sstr := other.RandomInt(87, 70)
+	sigStr := number.Uint16ToByteArr(uint16(sstr))
+	for element := range sigStr {
+		out[index+element] = sigStr[element]
 	}
-	index += len(numMsg)
+	index += len(sigStr)
 
 	//link quality random over 90 [4]
-	linkQ := number.Float64ToByteArr(other.RandomFloat(-40, -70))
+	lq := other.RandomFloat(-40, -70)
+	linkQ := number.Float64ToByteArr(lq)
 	for element := range linkQ {
 		out[index+element] = linkQ[element]
 	}
 	index += len(linkQ)
 	sec++
+	println("status: ", status, " Cnt: ", msgCount, " DevCont: ", dcnt, "Signal Strength: ", sstr, " Link Quality: ", lq)
+	return out
+}
+func loadDevice() []byte {
+	index := 0
+	out := make([]byte, 22)
+	///////////////////////
+	// Loading data Arduino
+	///////////////////////
+	out[index] = 0
+	out[index+1] = 1
+	status := other.RandomBool()
+	if sec%17 == 0 { //Every 17 second
+		if !status { //Connection Status [0]
+			out[index+1] = 0
+		}
+	}
+	index += 2
+	//message count[1]
+	msgCount += uint16(other.RandomInt(3, 1))
+	numMsg := number.Uint16ToByteArr(msgCount)
+	for element := range numMsg {
+		out[index+element] = numMsg[element]
+	}
+	index += len(numMsg)
+
+	//link quality random over between 100 and 80[2]
+	lq := other.RandomInt(100, 80)
+	linkQ := number.Uint16ToByteArr(uint16(lq))
+	for element := range linkQ {
+		out[index+element] = linkQ[element]
+	}
+	index += len(linkQ)
+
+	//geo position[3]
+	b := plc.ConvLocToByteArr(geo.Actual, false)
+	for element := range b {
+		out[element+index] = b[element]
+	}
+	println("status: ", status, " Cnt: ", msgCount, " Link Quality: ", lq, " geo: ", geo.Actual.Latitude, " ,", geo.Actual.Longitude)
+	sec++
+	geo.Next() //updating position
 	return out
 }

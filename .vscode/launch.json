@@ -11,7 +11,7 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {},
-            "args": ["-t","1000"]
+            "args": ["-t","1000","-p","10001"]
         }
     ]
 }
