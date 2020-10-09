@@ -12,8 +12,8 @@ import (
 	"time"
 
 	md "github.com/Kowiste/modserver"
-	"github.com/kowiste/utils/array"
-	"github.com/kowiste/utils/number"
+	"github.com/kowiste/utils/conversion/array"
+	"github.com/kowiste/utils/conversion/number"
 	"github.com/kowiste/utils/plc/generate/other"
 )
 
