@@ -1,25 +1,27 @@
 package main
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"time"
 
 	md "github.com/Kowiste/modserver"
 	"github.com/kowiste/utils/conversion/array"
 	"github.com/kowiste/utils/conversion/number"
+	"github.com/kowiste/utils/generator/location"
+	plc "github.com/kowiste/utils/plc/generate/location"
 	"github.com/kowiste/utils/plc/generate/other"
+	"github.com/kowiste/utils/read"
 )
 
 var memory []uint16
 var sec int
 var msgCount uint16
+var text = []string{"OK", "NG", "Lazada Ad.", "Check In"}
+var geo *location.GeoLocationHelper
 
 func main() {
 	port := flag.String("p", "40102", "Port to deploy Modbus")
@@ -28,11 +30,18 @@ func main() {
 	tick := flag.Int("t", 0, "Millisecond to trigger ontimer")
 
 	flag.Parse()
+	geo = location.NewGeoLocnRnd(0.01)
+	b, _ := read.File("device.json")
+	geo.LoadnoZ(b)
+
+	serv := md.NewServer()
 	if *mem != "" {
 		memory = loadMemory(*mem)
+		serv.HoldingRegisters = memory
+	} else {
+		serv.HoldingRegisters = make([]uint16, ^uint16(0))
 	}
-	serv := md.NewServer()
-	serv.HoldingRegisters = memory
+
 	if *mode != 0 {
 		//serv.RegisterFunctionHandler(uint8(*mode), CustomHandler)
 	}
@@ -62,7 +71,7 @@ func CustomHandler(s *md.Server, frame md.Framer) ([]byte, *md.Exception) {
 	dataPointer := 1        //Pointer of the first valid elemet in the array
 	if len(memory) >= reg+(numRegs/2) {
 		for n := 0; n < numRegs/2; n++ {
-			num := int16ToByte(memory[reg+n])
+			num := number.Uint16ToByteArr(memory[reg+n])
 			data[dataPointer] = num[0]
 			data[dataPointer+1] = num[1]
 			dataPointer += 2
@@ -81,8 +90,7 @@ func ConnectionHandler(IP net.Addr) {
 
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
-	log.Println("Updating values")
-	data := array.ByteToUint16Arr(loadStation(), true)
+	data := array.ByteToUint16Arr(loadDevice(), true)
 	for index := range data {
 		s.HoldingRegisters[index] = data[index]
 	}
@@ -90,7 +98,7 @@ func TimerHandler(s *md.Server) {
 
 func loadMemory(path string) []uint16 {
 	mem := make([]uint16, 0)
-	b, err := ReadFile(path)
+	b, err := read.File(path)
 	if err == nil {
 		err = json.Unmarshal(b, &mem)
 		if err != nil {
@@ -102,70 +110,55 @@ func loadMemory(path string) []uint16 {
 	return nil
 }
 
-//ReadFile Read a File
-func ReadFile(FilePath string) ([]byte, error) {
-	file, err := os.Open(FilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func int16ToByte(input uint16) []byte {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, input)
-	return b
-}
-func loadStation() []byte {
+func loadDevice() []byte {
 	index := 0
-	out := make([]byte, 40)
+	out := make([]byte, 38)
 	///////////////////////
-	// Loading data Station
+	// Loading data Arduino
 	///////////////////////
-	if sec%23 == 0 { //Every 23 second
-		//Connection Status [0]
-		out[index] = 0
-		out[index+1] = 0
-		if other.RandomBool() {
-			out[index+1] = 1
+	out[index] = 0
+	out[index+1] = 1
+	status := other.RandomBool()
+	if sec%17 == 0 { //Every 17 second
+		if !status { //Connection Status [0]
+			out[index+1] = 0
 		}
-
 	}
 	index += 2
-	//message count [1]
-	msgCount += uint16(other.RandomInt(50, 1))
+	//message count[1]
+	msgCount += uint16(other.RandomInt(23445, 1))
 	numMsg := number.Uint16ToByteArr(msgCount)
 	for element := range numMsg {
 		out[index+element] = numMsg[element]
 	}
 	index += len(numMsg)
 
-	//device connected count [2]
-
-	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(23, 17)))
-	for element := range numMsg {
-		out[index+element] = numMsg[element]
-	}
-	index += len(numMsg)
-
-	//signal strengh [3]
-	numMsg = number.Uint16ToByteArr(uint16(other.RandomInt(87, 70)))
-	for element := range numMsg {
-		out[index+element] = numMsg[element]
-	}
-	index += len(numMsg)
-
-	//link quality random over 90 [4]
-	linkQ := number.Float64ToByteArr(other.RandomFloat(-40, -70))
+	//link quality[2]
+	lq := other.RandomFloat(70, 0)
+	linkQ := number.Float64ToByteArr(lq)
 	for element := range linkQ {
 		out[index+element] = linkQ[element]
 	}
 	index += len(linkQ)
+
+	//geo position[6]
+	b := plc.ConvLocToByteArr(geo.Actual, false)
+	for element := range b {
+		out[element+index] = b[element]
+	}
+	index += len(b)
+
+	//string [14] len(10) bytes
+	byteText := []byte(text[other.RandomInt(4, 0)])
+	for element := range byteText {
+		out[element+index] = byteText[element]
+	}
+	index += len(byteText)
+	for i := index; i < len(out); i++ {
+		out[i] = 32
+	}
+	println("status: ", status, " Cnt: ", msgCount, " Link Quality: ", lq, " geo: ", geo.Actual.Latitude, " ,", geo.Actual.Longitude, " text: ", string(byteText))
 	sec++
+	geo.Next() //updating position
 	return out
 }
