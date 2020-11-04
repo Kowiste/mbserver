@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	"time"
 
@@ -73,7 +70,7 @@ func CustomHandler(s *md.Server, frame md.Framer) ([]byte, *md.Exception) {
 	dataPointer := 1        //Pointer of the first valid elemet in the array
 	if len(memory) >= reg+(numRegs/2) {
 		for n := 0; n < numRegs/2; n++ {
-			num := int16ToByte(memory[reg+n])
+			num := number.Uint16ToByteArr(memory[reg+n])
 			data[dataPointer] = num[0]
 			data[dataPointer+1] = num[1]
 			dataPointer += 2
@@ -92,7 +89,7 @@ func ConnectionHandler(IP net.Addr) {
 
 //TimerHandler on timer handler pout the code you want to execute every time given
 func TimerHandler(s *md.Server) {
-	data := array.ByteToUint16Arr(loadDevice(), true)
+	data := array.ByteToUint16Arr(loadStation(), true)
 	for index := range data {
 		s.HoldingRegisters[index] = data[index]
 	}
@@ -100,7 +97,7 @@ func TimerHandler(s *md.Server) {
 
 func loadMemory(path string) []uint16 {
 	mem := make([]uint16, 0)
-	b, err := ReadFile(path)
+	b, err := read.File(path)
 	if err == nil {
 		err = json.Unmarshal(b, &mem)
 		if err != nil {
@@ -112,25 +109,6 @@ func loadMemory(path string) []uint16 {
 	return nil
 }
 
-//ReadFile Read a File
-func ReadFile(FilePath string) ([]byte, error) {
-	file, err := os.Open(FilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func int16ToByte(input uint16) []byte {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, input)
-	return b
-}
 func loadStation() []byte {
 	index := 0
 	out := make([]byte, 40)
