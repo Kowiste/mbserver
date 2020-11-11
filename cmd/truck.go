@@ -98,19 +98,20 @@ func NewPump(NominalVolts uint16, NominalCurrent float32, NominalFlow float32, N
 }
 func (t *Truck) updatePump() {
 	if t.ActPump == 0 {
-		n := byte(rd.Intn(100)) //random start
-		if n < PercentActive {
-			n = 100
-			t.ActPump++
-			for element := range t.pumps {
-				t.pumps[element].StartStop = true
-			}
-		}
-	} else if t.ActPump == NTimesActive { //Finish active
-		t.ActPump = 0
+		//n := byte(rd.Intn(100)) //random start
+		//if n < PercentActive {
+		//	n = 100
+		//	t.ActPump++
+		t.ActPump = 1
 		for element := range t.pumps {
-			t.pumps[element].StartStop = false
+			t.pumps[element].StartStop = true
 		}
+		//}
+		//} else if t.ActPump == NTimesActive { //Finish active
+		///	t.ActPump = 0
+		///	for element := range t.pumps {
+		//		t.pumps[element].StartStop = false
+		//	}
 	} else {
 		t.ActPump++
 	}
@@ -135,10 +136,6 @@ func (t *Truck) updateCurrent() {
 		//v := float32(t.TimesAct) * (t.pumps[pump].Current.RaisePerc / 100)
 		if t.ActPump == 0 {
 			t.pumps[pump].Current.Current = 0
-			/*} else if t.ActPump > (t.TimesAct - int(v)) { //We are at the end of the signal
-			//de := float32(math.Pow(float64(float32(t.ActPump)-v), 2))
-			//t.pumps[pump].Current.Current = t.pumps[pump].Current.CurrentNom - 0.25*de
-			t.pumps[pump].Current.Current = 0*/
 		} else {
 			anterior := t.pumps[pump].Current.Current
 			nominal := t.pumps[pump].Current.CurrentNom
@@ -156,7 +153,7 @@ func (t *Truck) updateFlow() {
 				de := float32(math.Pow(float64(float32(t.ActPump)-v), 2))
 				t.pumps[pump].Flow.FlowRate = t.pumps[pump].Flow.FlowRate - 0.5*de
 			} else {
-				t.pumps[pump].Flow.FlowRate = 0
+				t.pumps[pump].Flow.FlowRate = 1
 			}
 		}
 		t.pumps[pump].TotalVol += t.pumps[pump].Flow.FlowRate
