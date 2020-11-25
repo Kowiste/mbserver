@@ -11,10 +11,10 @@ import (
 	md "github.com/Kowiste/modserver"
 	"github.com/kowiste/utils/conversion/array"
 	"github.com/kowiste/utils/conversion/number"
+	"github.com/kowiste/utils/file"
 	"github.com/kowiste/utils/generator/location"
 	plc "github.com/kowiste/utils/plc/generate/location"
 	"github.com/kowiste/utils/plc/generate/other"
-	"github.com/kowiste/utils/read"
 )
 
 var memory []uint16
@@ -31,7 +31,7 @@ func main() {
 
 	flag.Parse()
 	geo = location.NewGeoLocnRnd(0.01)
-	b, _ := read.File("device.json")
+	b, _ := file.Read("device.json")
 	geo.LoadnoZ(b)
 
 	serv := md.NewServer()
@@ -98,7 +98,7 @@ func TimerHandler(s *md.Server) {
 
 func loadMemory(path string) []uint16 {
 	mem := make([]uint16, 0)
-	b, err := read.File(path)
+	b, err := file.Read(path)
 	if err == nil {
 		err = json.Unmarshal(b, &mem)
 		if err != nil {
