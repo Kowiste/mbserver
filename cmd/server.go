@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"log"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -11,16 +11,19 @@ import (
 	md "github.com/Kowiste/modserver"
 	"github.com/kowiste/utils/conversion/array"
 	"github.com/kowiste/utils/conversion/number"
+	"github.com/kowiste/utils/file"
 	"github.com/kowiste/utils/generator/location"
+	logConfig "github.com/kowiste/utils/log"
 	plc "github.com/kowiste/utils/plc/generate/location"
 	"github.com/kowiste/utils/plc/generate/other"
-	"github.com/kowiste/utils/read"
+	log "github.com/sirupsen/logrus"
 )
 
 var memory []uint16
 var sec int
 var msgCount uint16
 var geo *location.GeoLocationHelper
+var cacheLog logConfig.HelperLog
 
 func main() {
 	port := flag.String("p", "40102", "Port to deploy Modbus")
@@ -29,8 +32,15 @@ func main() {
 	tick := flag.Int("t", 0, "Millisecond to trigger ontimer")
 
 	flag.Parse()
+	lc := logConfig.Config{
+		Maxsize: 10,
+		Maxfile: 1,
+		Maxage:  5,
+	}
+	logConfig.NewLog("server-"+*port, "config/client-", lc, cacheLog)
+
 	geo = location.NewGeoLocnRnd(0.01)
-	b, _ := read.File("device.json")
+	b, _ := file.Read("device.json")
 	geo.LoadnoZ(b)
 
 	serv := md.NewServer()
@@ -75,16 +85,16 @@ func CustomHandler(s *md.Server, frame md.Framer) ([]byte, *md.Exception) {
 			data[dataPointer+1] = num[1]
 			dataPointer += 2
 		}
-		log.Println("Reading Address: " + strconv.Itoa(reg) + " reading " + strconv.Itoa(numRegs) + " bytes")
+		log.Info("Reading Address: " + strconv.Itoa(reg) + " reading " + strconv.Itoa(numRegs) + " bytes")
 		return data, &md.Success
 	}
-	log.Println("Illegal Address")
+	log.Error("Illegal Address")
 	return data, &md.IllegalDataAddress //return illegal addresss
 }
 
 //ConnectionHandler On connection
 func ConnectionHandler(IP net.Addr) {
-	log.Println("Connection Establish from: ", IP.String())
+	log.Info("Connection Establish from: ", IP.String())
 }
 
 //TimerHandler on timer handler pout the code you want to execute every time given
@@ -97,11 +107,11 @@ func TimerHandler(s *md.Server) {
 
 func loadMemory(path string) []uint16 {
 	mem := make([]uint16, 0)
-	b, err := read.File(path)
+	b, err := file.Read(path)
 	if err == nil {
 		err = json.Unmarshal(b, &mem)
 		if err != nil {
-			println(err.Error())
+			log.Error(err.Error())
 			return nil
 		}
 		return mem
@@ -156,7 +166,10 @@ func loadStation() []byte {
 	}
 	index += len(linkQ)
 	sec++
-	println("status: ", status, " Cnt: ", msgCount, " DevCont: ", dcnt, "Signal Strength: ", sstr, " Link Quality: ", lq)
+	st := "status: " + strconv.FormatBool(status) + " Cnt: " + strconv.Itoa(int(msgCount)) + " DevCont: " + strconv.Itoa(int(dcnt)) +
+		"Signal Strength: " + strconv.Itoa(int(sstr)) + " Link Quality: " + fmt.Sprintf("%f", lq)
+	println(st)
+	log.Info(st)
 	return out
 }
 func loadDevice() []byte {
@@ -195,7 +208,9 @@ func loadDevice() []byte {
 	for element := range b {
 		out[element+index] = b[element]
 	}
-	println("status: ", status, " Cnt: ", msgCount, " Link Quality: ", lq, " geo: ", geo.Actual.Latitude, " ,", geo.Actual.Longitude)
+	st := "status: " + strconv.FormatBool(status) + " Cnt: " + strconv.Itoa(int(msgCount)) + " Link Quality: " + strconv.Itoa(int(lq)) +
+		" geo: " + fmt.Sprintf("%f", geo.Actual.Latitude) + " ," + fmt.Sprintf("%f", geo.Actual.Longitude)
+	log.Info(st)
 	sec++
 	geo.Next() //updating position
 	return out

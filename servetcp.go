@@ -2,9 +2,10 @@ package mbserver
 
 import (
 	"io"
-	"log"
 	"net"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func (s *Server) accept(listen net.Listener) error {
@@ -14,10 +15,10 @@ func (s *Server) accept(listen net.Listener) error {
 			if strings.Contains(err.Error(), "use of closed network connection") {
 				return nil
 			}
-			log.Printf("Unable to accept connections: %#v\n", err)
+			log.Error("Unable to accept connections: %#v\n", err)
 			return err
 		}
-		if s.onConnection !=nil{
+		if s.onConnection != nil {
 			go s.onConnection(conn.RemoteAddr())
 		}
 		go func(conn net.Conn) {
@@ -28,7 +29,7 @@ func (s *Server) accept(listen net.Listener) error {
 				bytesRead, err := conn.Read(packet)
 				if err != nil {
 					if err != io.EOF {
-						log.Printf("read error %v\n", err)
+						log.Error("read error %v\n", err)
 					}
 					return
 				}
@@ -37,7 +38,7 @@ func (s *Server) accept(listen net.Listener) error {
 
 				frame, err := NewTCPFrame(packet)
 				if err != nil {
-					log.Printf("bad packet error %v\n", err)
+					log.Error("bad packet error %v\n", err)
 					return
 				}
 
@@ -53,7 +54,7 @@ func (s *Server) accept(listen net.Listener) error {
 func (s *Server) ListenTCP(addressPort string) (err error) {
 	listen, err := net.Listen("tcp", addressPort)
 	if err != nil {
-		log.Printf("Failed to Listen: %v\n", err)
+		log.Error("Failed to Listen: %v\n", err)
 		return err
 	}
 	s.listeners = append(s.listeners, listen)

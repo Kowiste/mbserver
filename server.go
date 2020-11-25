@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/goburrow/serial"
+	log "github.com/sirupsen/logrus"
 )
 
 // Server is a Modbus slave with allocated memory for discrete inputs, coils, etc.
@@ -88,6 +89,7 @@ func (s *Server) handle(request *Request) Framer {
 		response.SetData(data)
 	} else {
 		exception = &IllegalFunction
+		log.Error("Exception handler Illegal function")
 	}
 
 	if exception != &Success {

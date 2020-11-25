@@ -2,6 +2,8 @@ package mbserver
 
 import (
 	"encoding/binary"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ReadCoils function 1, reads coils from internal memory.
@@ -122,6 +124,7 @@ func WriteHoldingRegisters(s *Server, frame Framer) ([]byte, *Exception) {
 
 	if len(valueBytes)/2 != numRegs {
 		exception = &IllegalDataAddress
+		log.Error("Illegal data address")
 	}
 
 	// Copy data to memroy
@@ -132,6 +135,7 @@ func WriteHoldingRegisters(s *Server, frame Framer) ([]byte, *Exception) {
 		data = frame.GetData()[0:4]
 	} else {
 		exception = &IllegalDataAddress
+		log.Error("Illegal data address")
 	}
 
 	return data, exception
